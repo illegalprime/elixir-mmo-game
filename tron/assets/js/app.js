@@ -39,19 +39,12 @@ channel.join()
 
 /**
  * Setup Game Engine
- * Code take from: https://phaser.io/tutorials/getting-started-phaser3/part5
  */
 const config = {
     type: Phaser.AUTO,
     width: 700,
     height: 600,
     parent: 'game_container',
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 200 }
-        }
-    },
     scene: {
         preload: preload,
         create: create
@@ -81,11 +74,25 @@ function create ()
         blendMode: 'ADD'
     });
 
-    const logo = this.physics.add.image(400, 100, 'logo');
+    const logo = this.add.image(400, 100, 'logo').setInteractive();
+    this.input.setDraggable(logo);
+    this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+        // update local game
+        gameObject.x = dragX;
+        gameObject.y = dragY;
 
-    logo.setVelocity(100, 200);
-    logo.setBounce(1, 1);
-    logo.setCollideWorldBounds(true);
+        // update everyone else
+        channel.push('shout', {
+            x: dragX,
+            y: dragY,
+        });
+    });
+
+    // Listen for changes and update message box
+    channel.on('shout', payload => {
+        logo.x = payload.x;
+        logo.y = payload.y;
+    });
 
     emitter.startFollow(logo);
 }
