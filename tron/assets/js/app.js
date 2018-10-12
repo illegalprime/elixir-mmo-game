@@ -19,7 +19,11 @@
 // paths "./socket" or full ones "web/static/js/socket".
 
 import { Socket } from "phoenix";
+import * as Phaser from 'phaser';
 
+/**
+ * Setup Socket
+ */
 const socket = new Socket("/socket", {
     params: { token: window.userToken }
 });
@@ -28,30 +32,60 @@ socket.connect();
 
 const channel = socket.channel('world:lobby', {});
 
-// Get UI Elements
-const ul = document.getElementById('msg-list');
-const name = document.getElementById('name');
-const msg = document.getElementById('msg');
-
-// Listen for changes and update message box
-channel.on('shout', payload => {
-    const li = document.createElement('li');
-    const name = payload.name || 'anon';
-    li.innerHTML = `<b>${name}</b>: ${payload.message}`;
-    ul.appendChild(li);
-});
-
 channel.join()
     .receive("ok", resp => console.log("Joined successfully", resp))
     .receive("error", resp => console.log("Unable to join", resp));
 
-// Send message when the user hits 'Enter'
-msg.addEventListener('keypress', event => {
-    if (event.keyCode === 13 && msg.value.length > 0) {
-        channel.push('shout', {
-            name: name.value,
-            message: msg.value,
-        });
-        msg.value = '';
+
+/**
+ * Setup Game Engine
+ * Code take from: https://phaser.io/tutorials/getting-started-phaser3/part5
+ */
+const config = {
+    type: Phaser.AUTO,
+    width: 700,
+    height: 600,
+    parent: 'game_container',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 200 }
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create
     }
-});
+};
+
+const game = new Phaser.Game(config);
+
+function preload ()
+{
+    this.load.setBaseURL('http://labs.phaser.io');
+
+    this.load.image('sky', 'assets/skies/space3.png');
+    this.load.image('logo', 'assets/sprites/phaser3-logo.png');
+    this.load.image('red', 'assets/particles/red.png');
+}
+
+function create ()
+{
+    this.add.image(400, 300, 'sky');
+
+    const particles = this.add.particles('red');
+
+    const emitter = particles.createEmitter({
+        speed: 100,
+        scale: { start: 1, end: 0 },
+        blendMode: 'ADD'
+    });
+
+    const logo = this.physics.add.image(400, 100, 'logo');
+
+    logo.setVelocity(100, 200);
+    logo.setBounce(1, 1);
+    logo.setCollideWorldBounds(true);
+
+    emitter.startFollow(logo);
+}
