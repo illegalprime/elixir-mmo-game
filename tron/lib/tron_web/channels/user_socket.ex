@@ -2,7 +2,7 @@ defmodule TronWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", TronWeb.RoomChannel
+  channel "world:*", TronWeb.WorldChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
