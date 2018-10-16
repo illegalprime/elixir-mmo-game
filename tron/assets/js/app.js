@@ -40,61 +40,78 @@ channel.join()
 /**
  * Setup Game Engine
  */
+const width = 700;
+const height = 600;
 const config = {
     type: Phaser.AUTO,
-    width: 700,
-    height: 600,
+    width,
+    height,
     parent: 'game_container',
+    physics: {
+        default: 'arcade',
+        arcade: {debug: false}
+    },
     scene: {
-        preload: preload,
-        create: create
+        preload,
+        create,
+        update,
     }
 };
 
-if (game_config.enable) {
-    new Phaser.Game(config);
+const state = {};
+if (window.game_config.enable) {
+    state.game = new Phaser.Game(config);
 }
 
 function preload ()
 {
-    this.load.setBaseURL('http://labs.phaser.io');
-
-    this.load.image('sky', 'assets/skies/space3.png');
-    this.load.image('logo', 'assets/sprites/phaser3-logo.png');
-    this.load.image('red', 'assets/particles/red.png');
+    this.load.image('player', 'images/player.png');
 }
 
 function create ()
 {
-    this.add.image(400, 300, 'sky');
-
-    const particles = this.add.particles('red');
-
-    const emitter = particles.createEmitter({
-        speed: 100,
-        scale: { start: 1, end: 0 },
-        blendMode: 'ADD'
+    state.cursors = this.input.keyboard.createCursorKeys();
+    state.score_text = this.add.text(10, 10, 'score: 0', {
+        fontSize: '32px',
+        fill: '#fff',
     });
-
-    const logo = this.add.image(400, 100, 'logo').setInteractive();
-    this.input.setDraggable(logo);
-    this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
-        // update local game
-        gameObject.x = dragX;
-        gameObject.y = dragY;
-
-        // update everyone else
-        channel.push('shout', {
-            x: dragX,
-            y: dragY,
-        });
+    state.nick_text = this.add.text(0, 0, window.game_config.username, {
+        fontSize: '32px',
+        fill: '#fff',
     });
+    state.avatar_color = Math.random() * 0xffffff;
+    state.avatar = this.physics.add.sprite(width/2, height/2, 'player');
+    state.avatar.setTint(state.avatar_color);
+    window.game_state = state;
+}
 
-    // Listen for changes and update message box
-    channel.on('shout', payload => {
-        logo.x = payload.x;
-        logo.y = payload.y;
-    });
+function update ()
+{
+    const {
+        nick_text,
+        avatar,
+        cursors,
+    } = state;
 
-    emitter.startFollow(logo);
+    if (cursors.left.isDown) {
+        avatar.setVelocityX(-160);
+    }
+    else if (cursors.right.isDown) {
+        avatar.setVelocityX(160);
+    }
+    else {
+        avatar.setVelocityX(0);
+    }
+    if (cursors.up.isDown) {
+        avatar.setVelocityY(-160);
+    }
+    else if (cursors.down.isDown) {
+        avatar.setVelocityY(160);
+    }
+    else {
+        avatar.setVelocityY(0);
+    }
+
+    nick_text.x = avatar.x - nick_text.width / 2;
+    nick_text.y = avatar.y - 50;
 }
