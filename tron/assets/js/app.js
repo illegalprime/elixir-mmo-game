@@ -22,22 +22,6 @@ import { Socket } from "phoenix";
 import * as Phaser from 'phaser';
 
 /**
- * Setup Socket
- */
-const socket = new Socket("/socket", {
-    params: { token: window.userToken }
-});
-
-socket.connect();
-
-const channel = socket.channel('world:lobby', {});
-
-channel.join()
-    .receive("ok", resp => console.log("Joined successfully", resp))
-    .receive("error", resp => console.log("Unable to join", resp));
-
-
-/**
  * Setup Game Engine
  */
 const width = 700;
@@ -59,9 +43,6 @@ const config = {
 };
 
 const state = {};
-if (window.game_config.enable) {
-    state.game = new Phaser.Game(config);
-}
 
 function preload ()
 {
@@ -70,29 +51,55 @@ function preload ()
 
 function create ()
 {
+    state.players = {};
+    const create_player = (nick, x, y) => {
+        const nick_text = this.add.text(0, 0, nick, {
+            fontSize: '32px',
+            fill: '#fff',
+        });
+        const avatar = this.physics.add.sprite(x, y, 'player');
+        avatar.setTint(Math.random() * 0xffffff);
+        return {
+            nick_text,
+            avatar,
+        };
+    };
+
     state.cursors = this.input.keyboard.createCursorKeys();
     state.score_text = this.add.text(10, 10, 'score: 0', {
         fontSize: '32px',
         fill: '#fff',
     });
-    state.nick_text = this.add.text(0, 0, window.game_config.username, {
-        fontSize: '32px',
-        fill: '#fff',
+
+    // create our player
+    const nick = window.game_config.username;
+    const player = create_player(nick, width/2, height/2);
+    state.avatar = player.avatar;
+    state.prev_pos = { x: 0, y: 0 };
+    state.players[nick] = player;
+
+    state.channel.on('shout', ({ x, y, nick }) => {
+        // create new players when they join
+        if (!state.players[nick]) {
+            state.players[nick] = create_player(nick, x, y);
+        }
+        // otherwise move the player to the correct location
+        else {
+            const player = state.players[nick].avatar;
+            player.x = x;
+            player.y = y;
+        }
     });
-    state.avatar_color = Math.random() * 0xffffff;
-    state.avatar = this.physics.add.sprite(width/2, height/2, 'player');
-    state.avatar.setTint(state.avatar_color);
-    window.game_state = state;
 }
 
 function update ()
 {
     const {
-        nick_text,
         avatar,
         cursors,
     } = state;
 
+    // manage keyboard controls
     if (cursors.left.isDown) {
         avatar.setVelocityX(-160);
     }
@@ -112,6 +119,44 @@ function update ()
         avatar.setVelocityY(0);
     }
 
-    nick_text.x = avatar.x - nick_text.width / 2;
-    nick_text.y = avatar.y - 50;
+    // keep name aligned with character
+    for (const [_, { avatar, nick_text }] of Object.entries(state.players)) {
+        nick_text.x = avatar.x - nick_text.width / 2;
+        nick_text.y = avatar.y - 50;
+    }
+
+    // send position update only when changed
+    const [x, y] = [avatar.x, avatar.y];
+    if (state.prev_pos.x !== x || state.prev_pos.y !== y) {
+        state.update_pos(x, y);
+        state.prev_pos = { x, y };
+    }
+}
+
+function start_game(game_config) {
+    const nick = game_config.username;
+    state.game = new Phaser.Game(config);
+
+    /**
+     * Setup Socket
+     */
+    const socket = new Socket("/socket", {
+        params: { token: window.userToken }
+    });
+
+    socket.connect();
+
+    // connect to a player-specific socket
+    state.channel = socket.channel('world:lobby', {});
+    state.channel.join()
+        .receive('ok', resp => console.log('Joined successfully', resp))
+        .receive('error', resp => console.log('Unable to join', resp));
+
+    state.update_pos = (x, y) => {
+        state.channel.push('shout', { x, y, nick });
+    };
+}
+
+if (window.game_config && window.game_config.enable) {
+    start_game(window.game_config);
 }
