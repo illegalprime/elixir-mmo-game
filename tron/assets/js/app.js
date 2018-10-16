@@ -51,7 +51,9 @@ const config = {
     }
 };
 
-const game = new Phaser.Game(config);
+if (game_config.enable) {
+    new Phaser.Game(config);
+}
 
 function preload ()
 {

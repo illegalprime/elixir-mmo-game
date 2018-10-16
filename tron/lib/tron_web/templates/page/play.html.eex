@@ -1,0 +1,11 @@
+<h1 style="text-align: center;">
+    <%= @username %>
+</h1>
+<br/>
+<script>
+ window.game_config = {
+     enable: true,
+     username: "<%= @username %>",
+ };
+</script>
+<div id="game_container"></div>

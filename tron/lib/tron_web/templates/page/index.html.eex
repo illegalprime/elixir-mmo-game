@@ -1,1 +1,7 @@
-<div id="game_container"></div>
+<div>
+    <form action="/play" style="font-family:monospace;font-size:20pt">
+        <h1>Enter your name, player:</h1>
+        <input type="text" name="nick" placeholder="anon" />
+        <input type="submit" value="Go!"/>
+    </form>
+</div>
