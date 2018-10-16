@@ -4,4 +4,11 @@
         <input type="text" name="nick" placeholder="anon" />
         <input type="submit" value="Go!"/>
     </form>
+
+    <%= if assigns[:wrong_username] do %>
+        <h1 style="color:red;">
+            Name "<%= @wrong_username %>" invalid, a name can only contain
+            numbers, letters, '_' and '-'
+        </h1>
+    <% end %>
 </div>
