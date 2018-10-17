@@ -51,6 +51,7 @@ function preload ()
 
 function create ()
 {
+    state.score = 0;
     state.players = {};
     const create_player = (nick, x, y) => {
         const nick_text = this.add.text(0, 0, nick, {
@@ -131,6 +132,10 @@ function update ()
         state.update_pos(x, y);
         state.prev_pos = { x, y };
     }
+
+    // update the score
+    state.score += 1;
+    state.score_text.text = `score: ${parseInt(state.score / 30)}`;
 }
 
 function start_game(game_config) {
