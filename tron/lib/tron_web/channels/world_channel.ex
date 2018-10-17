@@ -5,16 +5,25 @@ defmodule TronWeb.WorldChannel do
 
   def join("world:lobby", payload, socket) do
     if authorized?(payload) do
+      # gather all current players and update everyone!
+      players = Tron.Player.Registry.list_players
+      |> Map.values
+      |> Enum.map(&(Tron.Player.view(&1)))
       # add the new player as a new process
-      {:ok, pid} = Registry.player_join payload["nick"], %{
+      new_player = %{
         x: payload["x"],
         y: payload["y"],
         nick: payload["nick"],
       }
+      {:ok, pid} = Registry.player_join payload["nick"], new_player
       # lets keep this one around so we don't have to look it up
       socket = assign(socket, :player_pid, pid)
-      # say we successfully joined
-      {:ok, socket}
+      # update all the other players after this one joins
+      send(self(), {:new_player, new_player})
+      # say we successfully joined and send already connected players
+      {:ok, %{
+          players: players,
+       }, socket}
     else
       {:error, %{reason: "unauthorized"}}
     end
@@ -37,6 +46,11 @@ defmodule TronWeb.WorldChannel do
   def handle_in("position", %{"x" => x, "y" => y}, socket) do
     # TODO: check if update is too large here to prevent cheating
     Player.update_pos(socket.assigns[:player_pid], %{x: x, y: y})
+    {:noreply, socket}
+  end
+
+  def handle_info({:new_player, new_player}, socket) do
+    broadcast_from socket, "position", %{ players: [new_player] }
     {:noreply, socket}
   end
 

@@ -79,18 +79,29 @@ function create ()
     state.prev_pos = { x: 0, y: 0 };
     state.players[nick] = player;
 
-    state.channel.on('shout', ({ x, y, nick }) => {
-        // create new players when they join
-        if (!state.players[nick]) {
-            state.players[nick] = create_player(nick, x, y);
+    const update_players = players => {
+        for (const { x, y, nick } of players) {
+            // create new players when they join
+            if (!state.players[nick]) {
+                state.players[nick] = create_player(nick, x, y);
+            }
+            // otherwise move the player to the correct location
+            else {
+                const player = state.players[nick].avatar;
+                player.x = x;
+                player.y = y;
+            }
         }
-        // otherwise move the player to the correct location
-        else {
-            const player = state.players[nick].avatar;
-            player.x = x;
-            player.y = y;
-        }
-    });
+    };
+
+    state.channel.join()
+        .receive('ok', resp => {
+            console.log('Joined successfully', resp);
+            update_players(resp.players);
+        })
+        .receive('error', resp => console.log('Unable to join', resp));
+
+    state.channel.on('position', payload => update_players(payload.players));
 }
 
 function update ()
@@ -161,9 +172,6 @@ function start_game(game_config) {
         y: state.start_pos.y,
         nick,
     });
-    state.channel.join()
-        .receive('ok', resp => console.log('Joined successfully', resp))
-        .receive('error', resp => console.log('Unable to join', resp));
 
     state.update_pos = (x, y) => {
         state.channel.push('position', { x, y, });
