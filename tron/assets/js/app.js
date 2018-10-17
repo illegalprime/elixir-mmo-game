@@ -74,7 +74,7 @@ function create ()
 
     // create our player
     const nick = window.game_config.username;
-    const player = create_player(nick, width/2, height/2);
+    const player = create_player(nick, state.start_pos.x, state.start_pos.y);
     state.avatar = player.avatar;
     state.prev_pos = { x: 0, y: 0 };
     state.players[nick] = player;
@@ -140,6 +140,10 @@ function update ()
 
 function start_game(game_config) {
     const nick = game_config.username;
+    state.start_pos = {
+        x: width/2,
+        y: height/2,
+    };
     state.game = new Phaser.Game(config);
 
     /**
@@ -152,13 +156,17 @@ function start_game(game_config) {
     socket.connect();
 
     // connect to a player-specific socket
-    state.channel = socket.channel('world:lobby', {});
+    state.channel = socket.channel('world:lobby', {
+        x: state.start_pos.x,
+        y: state.start_pos.y,
+        nick,
+    });
     state.channel.join()
         .receive('ok', resp => console.log('Joined successfully', resp))
         .receive('error', resp => console.log('Unable to join', resp));
 
     state.update_pos = (x, y) => {
-        state.channel.push('shout', { x, y, nick });
+        state.channel.push('position', { x, y, });
     };
 }
 

@@ -12,6 +12,11 @@ defmodule Tron.Application do
       supervisor(TronWeb.Endpoint, []),
       # Start your own worker by calling: Tron.Worker.start_link(arg1, arg2, arg3)
       # worker(Tron.Worker, [arg1, arg2, arg3]),
+      # Create a registry to map player IDs to their processes
+      { Tron.Player.Registry, name: Tron.Player.Registry },
+      # Create a dynamic supervisor to handle player connections
+      { DynamicSupervisor,
+        name: Tron.PlayerSupervisor, strategy: :one_for_one },
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
