@@ -21,6 +21,10 @@ defmodule Tron.Player.Registry do
     GenServer.call(__MODULE__, {:list})
   end
 
+  def nick_exists?(nick) do
+    GenServer.call(__MODULE__, {:lookup, nick}) != :error
+  end
+
   #
   # Server-Side functions
   #

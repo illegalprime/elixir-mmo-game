@@ -11,4 +11,11 @@
             numbers, letters, '_' and '-'
         </h1>
     <% end %>
+
+    <%= if assigns[:taken_username] do %>
+        <h1 style="color:red;">
+            Name "<%= @taken_username %>" is already taken!
+            Please pick another.
+        </h1>
+    <% end %>
 </div>
