@@ -7,15 +7,13 @@ defmodule TronWeb.WorldChannel do
     if authorized?(payload) do
       # gather all current players and update everyone!
       players = Tron.Player.Registry.list_players
-      |> Map.values
-      |> Enum.map(&(Tron.Player.view(&1)))
       # add the new player as a new process
       new_player = %{
         x: payload["x"],
         y: payload["y"],
         nick: payload["nick"],
       }
-      {:ok, pid} = Registry.player_join payload["nick"], new_player
+      {:ok, pid} = Registry.player_join payload["nick"], new_player, self()
       # lets keep this one around so we don't have to look it up
       socket = assign(socket, :player_pid, pid)
       # update all the other players after this one joins
@@ -51,6 +49,11 @@ defmodule TronWeb.WorldChannel do
 
   def handle_info({:new_player, new_player}, socket) do
     broadcast_from socket, "position", %{ players: [new_player] }
+    {:noreply, socket}
+  end
+
+  def handle_info({:lost_player, nick}, socket) do
+    push socket, "lost_player", %{ nick: nick }
     {:noreply, socket}
   end
 

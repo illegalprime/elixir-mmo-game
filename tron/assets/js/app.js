@@ -83,6 +83,7 @@ function create ()
         for (const { x, y, nick } of players) {
             // create new players when they join
             if (!state.players[nick]) {
+                console.log('player joined!', nick);
                 state.players[nick] = create_player(nick, x, y);
             }
             // otherwise move the player to the correct location
@@ -102,6 +103,16 @@ function create ()
         .receive('error', resp => console.log('Unable to join', resp));
 
     state.channel.on('position', payload => update_players(payload.players));
+
+    state.channel.on('lost_player', ({ nick }) => {
+        const player = state.players[nick];
+        if (player) {
+            console.log('player left!', nick);
+            this.children.remove(player.avatar);
+            this.children.remove(player.nick_text);
+            delete state.players[nick];
+        }
+    });
 }
 
 function update ()
