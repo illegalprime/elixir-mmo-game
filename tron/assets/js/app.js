@@ -60,6 +60,7 @@ function create ()
         });
         const avatar = this.physics.add.sprite(x, y, 'player');
         avatar.setTint(Math.random() * 0xffffff);
+        avatar.setCollideWorldBounds(true);
         return {
             nick_text,
             avatar,
