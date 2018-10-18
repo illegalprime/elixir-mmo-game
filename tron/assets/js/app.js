@@ -127,6 +127,16 @@ function create ()
             delete state.players[nick];
         }
     });
+
+    state.channel.on('eat_food', ({ food }) => {
+        for (const id of food) {
+            const food = state.food[id];
+            if (food) {
+                this.children.remove(food);
+                delete state.food[id];
+            }
+        }
+    });
 }
 
 function update ()

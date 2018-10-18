@@ -2,7 +2,6 @@ defmodule TronWeb.WorldChannel do
   use TronWeb, :channel
   alias Tron.Player.Registry
   alias Tron.Player
-  alias Tron.Utils
 
   def join("world:lobby", payload, socket) do
     if authorized?(payload) do
@@ -51,6 +50,13 @@ defmodule TronWeb.WorldChannel do
     # send updates to everyone
     player = %{ x: x, y: y, nick: socket.assigns[:nick] }
     broadcast_from socket, "position", %{ players: [player] }
+    # check if we ate any food
+    food = Tron.World.Food.touches_food(player)
+    # send out food we ate
+    unless Enum.empty? food do
+      broadcast socket, "eat_food", %{ food: food }
+      Tron.World.Food.eat_food(food)
+    end
     {:noreply, socket}
   end
 
