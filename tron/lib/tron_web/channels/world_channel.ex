@@ -2,6 +2,7 @@ defmodule TronWeb.WorldChannel do
   use TronWeb, :channel
   alias Tron.Player.Registry
   alias Tron.Player
+  alias Tron.Utils
 
   def join("world:lobby", payload, socket) do
     if authorized?(payload) do
@@ -16,6 +17,7 @@ defmodule TronWeb.WorldChannel do
       {:ok, pid} = Registry.player_join payload["nick"], new_player, self()
       # lets keep this one around so we don't have to look it up
       socket = assign(socket, :player_pid, pid)
+      socket = assign(socket, :nick, payload["nick"])
       # update all the other players after this one joins
       send(self(), {:new_player, new_player})
       # say we successfully joined and send already connected players
@@ -43,7 +45,11 @@ defmodule TronWeb.WorldChannel do
   # Update the position of each player
   def handle_in("position", %{"x" => x, "y" => y}, socket) do
     # TODO: check if update is too large here to prevent cheating
+    # update all the player's states
     Player.update_pos(socket.assigns[:player_pid], %{x: x, y: y})
+    # send updates to everyone
+    player = %{ x: x, y: y, nick: socket.assigns[:nick] }
+    broadcast_from socket, "position", %{ players: [player] }
     {:noreply, socket}
   end
 
