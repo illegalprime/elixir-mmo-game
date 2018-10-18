@@ -23,6 +23,7 @@ defmodule TronWeb.WorldChannel do
       # say we successfully joined and send already connected players
       {:ok, %{
           players: players,
+          food: Tron.World.Food.list_foods,
        }, socket}
     else
       {:error, %{reason: "unauthorized"}}

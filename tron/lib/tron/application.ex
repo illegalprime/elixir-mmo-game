@@ -17,6 +17,8 @@ defmodule Tron.Application do
       # Create a dynamic supervisor to handle player connections
       { DynamicSupervisor,
         name: Tron.PlayerSupervisor, strategy: :one_for_one },
+      # Create a server to keep track of foods
+      { Tron.World.Food, name: Tron.World.Food }
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

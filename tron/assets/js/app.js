@@ -46,20 +46,24 @@ const state = {};
 
 function preload ()
 {
-    this.load.image('player', 'images/player.png');
+    this.load.image('player', 'images/bear.png');
+    this.load.image('food', 'images/honey.png');
 }
 
 function create ()
 {
+    const nick = window.game_config.username;
+    state.prev_pos = { x: 0, y: 0 };
     state.score = 0;
     state.players = {};
+    state.food = {};
     const create_player = (nick, x, y) => {
         const nick_text = this.add.text(0, 0, nick, {
             fontSize: '32px',
             fill: '#fff',
         });
+        nick_text.setTint(Math.random() * 0xffffff);
         const avatar = this.physics.add.sprite(x, y, 'player');
-        avatar.setTint(Math.random() * 0xffffff);
         avatar.setCollideWorldBounds(true);
         return {
             nick_text,
@@ -67,18 +71,17 @@ function create ()
         };
     };
 
+    const create_food = (foods) => {
+        for (const [id, {x, y, width, height}] of Object.entries(foods)) {
+            state.food[id] = this.physics.add.sprite(x, y, 'food');
+        }
+    };
+
     state.cursors = this.input.keyboard.createCursorKeys();
     state.score_text = this.add.text(10, 10, 'score: 0', {
         fontSize: '32px',
         fill: '#fff',
     });
-
-    // create our player
-    const nick = window.game_config.username;
-    const player = create_player(nick, state.start_pos.x, state.start_pos.y);
-    state.avatar = player.avatar;
-    state.prev_pos = { x: 0, y: 0 };
-    state.players[nick] = player;
 
     const update_players = players => {
         for (const { x, y, nick } of players) {
@@ -99,7 +102,17 @@ function create ()
     state.channel.join()
         .receive('ok', resp => {
             console.log('Joined successfully', resp);
+            // make food
+            create_food(resp.food);
+            // make other players
             update_players(resp.players);
+            // create our player
+            const player = create_player(nick, state.start_pos.x, state.start_pos.y);
+            state.avatar = player.avatar;
+            state.players[nick] = player;
+            // signal we're ready
+            state.ready = true;
+
         })
         .receive('error', resp => console.log('Unable to join', resp));
 
@@ -121,7 +134,12 @@ function update ()
     const {
         avatar,
         cursors,
+        ready,
     } = state;
+
+    if (!ready) {
+        return;
+    }
 
     // manage keyboard controls
     if (cursors.left.isDown) {
