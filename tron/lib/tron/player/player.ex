@@ -1,6 +1,8 @@
 defmodule Tron.Player do
   # restart: transient allows the agent to be stopped and never restarted
   use Agent, restart: :transient
+  @player_start_width 32
+  @player_start_height 27
 
   def start_link(%{x: x, y: y, nick: nick}) do
     start = %{
@@ -8,6 +10,7 @@ defmodule Tron.Player do
       y: y,
       nick: nick,
       score: 0,
+      size: %{w: @player_start_width, h: @player_start_height},
     }
     Agent.start_link(fn -> start end)
   end
@@ -18,8 +21,21 @@ defmodule Tron.Player do
   end
 
   def add_score(pid, increment) do
-    Agent.update pid, fn pos -> %{ pos | score: pos.score + increment } end
-    view(pid).score
+    Agent.update pid, fn player ->
+      score = player.score + increment
+      %{ player |
+         score: score,
+         size: score_to_size(score),
+      }
+    end
+    view(pid)
+  end
+
+  def score_to_size(score) do
+    %{
+      w: @player_start_width + 2 * score,
+      h: @player_start_height + 2 * score,
+    }
   end
 
   def view(pid) do

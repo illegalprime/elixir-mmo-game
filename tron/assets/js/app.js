@@ -57,13 +57,19 @@ function create ()
     state.score = 0;
     state.players = {};
     state.food = {};
-    const create_player = (nick, x, y) => {
+    const create_player = (nick, x, y, size) => {
         const nick_text = this.add.text(0, 0, nick, {
             fontSize: '32px',
             fill: '#fff',
         });
         nick_text.setTint(Math.random() * 0xffffff);
         const avatar = this.physics.add.sprite(x, y, 'player');
+        if (size) {
+            avatar.setDisplaySize(size.w, size.h);
+        }
+        else {
+            avatar.setDisplaySize(32, 27);
+        }
         avatar.setCollideWorldBounds(true);
         return {
             nick_text,
@@ -84,17 +90,18 @@ function create ()
     });
 
     const update_players = players => {
-        for (const { x, y, nick } of players) {
+        for (const { x, y, nick, size } of players) {
             // create new players when they join
             if (!state.players[nick]) {
                 console.log('player joined!', nick);
-                state.players[nick] = create_player(nick, x, y);
+                state.players[nick] = create_player(nick, x, y, size);
             }
             // otherwise move the player to the correct location
             else {
                 const player = state.players[nick].avatar;
                 player.x = x;
                 player.y = y;
+                player.setDisplaySize(size.w, size.h);
             }
         }
     };
@@ -131,11 +138,15 @@ function create ()
         if (payload.players) update_players(payload.players);
         // update food
         if (payload.eaten_food) eat_food(payload.eaten_food);
-        // update score
-        if (payload.score) {
+
+        // update player stuff
+        const player = payload.player;
+        if (player) {
             // update the score
-            state.score = payload.score;
+            state.score = player.score;
             state.score_text.text = `score: ${state.score}`;
+            // update size
+            state.avatar.setDisplaySize(player.size.w, player.size.h);
         }
     });
 
@@ -185,7 +196,7 @@ function update ()
     // keep name aligned with character
     for (const [_, { avatar, nick_text }] of Object.entries(state.players)) {
         nick_text.x = avatar.x - nick_text.width / 2;
-        nick_text.y = avatar.y - 50;
+        nick_text.y = avatar.y - 35 - (avatar.displayHeight / 2);
     }
 
     // send position update only when changed

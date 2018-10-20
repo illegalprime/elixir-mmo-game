@@ -51,7 +51,7 @@ defmodule TronWeb.WorldChannel do
     food = Tron.World.Food.touches_food(player)
     # eat the food & increment score
     Tron.World.Food.eat_food(food)
-    score = Player.add_score(pid, Enum.count(food))
+    player = Player.add_score(pid, Enum.count(food))
     # send updates to everyone
     broadcast_from socket, "world", %{
       players: [player],
@@ -59,7 +59,7 @@ defmodule TronWeb.WorldChannel do
     }
     push socket, "world", %{
       eaten_food: food,
-      score: score,
+      player: player,
     }
     {:noreply, socket}
   end
