@@ -99,6 +99,16 @@ function create ()
         }
     };
 
+    const eat_food = food => {
+        for (const id of food) {
+            const food = state.food[id];
+            if (food) {
+                this.children.remove(food);
+                delete state.food[id];
+            }
+        }
+    };
+
     state.channel.join()
         .receive('ok', resp => {
             console.log('Joined successfully', resp);
@@ -116,7 +126,18 @@ function create ()
         })
         .receive('error', resp => console.log('Unable to join', resp));
 
-    state.channel.on('position', payload => update_players(payload.players));
+    state.channel.on('world', payload => {
+        // update players
+        if (payload.players) update_players(payload.players);
+        // update food
+        if (payload.eaten_food) eat_food(payload.eaten_food);
+        // update score
+        if (payload.score) {
+            // update the score
+            state.score = payload.score;
+            state.score_text.text = `score: ${state.score}`;
+        }
+    });
 
     state.channel.on('lost_player', ({ nick }) => {
         const player = state.players[nick];
@@ -125,16 +146,6 @@ function create ()
             this.children.remove(player.avatar);
             this.children.remove(player.nick_text);
             delete state.players[nick];
-        }
-    });
-
-    state.channel.on('eat_food', ({ food }) => {
-        for (const id of food) {
-            const food = state.food[id];
-            if (food) {
-                this.children.remove(food);
-                delete state.food[id];
-            }
         }
     });
 }
@@ -183,10 +194,6 @@ function update ()
         state.update_pos(x, y);
         state.prev_pos = { x, y };
     }
-
-    // update the score
-    state.score += 1;
-    state.score_text.text = `score: ${parseInt(state.score / 30)}`;
 }
 
 function start_game(game_config) {

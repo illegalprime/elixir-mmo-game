@@ -44,24 +44,28 @@ defmodule TronWeb.WorldChannel do
 
   # Update the position of each player
   def handle_in("position", %{"x" => x, "y" => y}, socket) do
-    # TODO: check if update is too large here to prevent cheating
     # update all the player's states
-    Player.update_pos(socket.assigns[:player_pid], %{x: x, y: y})
-    # send updates to everyone
-    player = %{ x: x, y: y, nick: socket.assigns[:nick] }
-    broadcast_from socket, "position", %{ players: [player] }
+    pid = socket.assigns[:player_pid]
+    player = Player.update_pos(pid, %{x: x, y: y})
     # check if we ate any food
     food = Tron.World.Food.touches_food(player)
-    # send out food we ate
-    unless Enum.empty? food do
-      broadcast socket, "eat_food", %{ food: food }
-      Tron.World.Food.eat_food(food)
-    end
+    # eat the food & increment score
+    Tron.World.Food.eat_food(food)
+    score = Player.add_score(pid, Enum.count(food))
+    # send updates to everyone
+    broadcast_from socket, "world", %{
+      players: [player],
+      eaten_food: food,
+    }
+    push socket, "world", %{
+      eaten_food: food,
+      score: score,
+    }
     {:noreply, socket}
   end
 
   def handle_info({:new_player, new_player}, socket) do
-    broadcast_from socket, "position", %{ players: [new_player] }
+    broadcast_from socket, "world", %{ players: [new_player] }
     {:noreply, socket}
   end
 
