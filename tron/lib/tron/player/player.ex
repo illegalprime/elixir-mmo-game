@@ -3,6 +3,8 @@ defmodule Tron.Player do
   use Agent, restart: :transient
   @player_start_width 32
   @player_start_height 27
+  @player_start_speed 160
+  @min_speed 50
 
   def start_link(%{x: x, y: y, nick: nick}) do
     start = %{
@@ -11,6 +13,7 @@ defmodule Tron.Player do
       nick: nick,
       score: 0,
       size: %{w: @player_start_width, h: @player_start_height},
+      speed: @player_start_speed,
     }
     Agent.start_link(fn -> start end)
   end
@@ -26,6 +29,7 @@ defmodule Tron.Player do
       %{ player |
          score: score,
          size: score_to_size(score),
+         speed: score_to_speed(score),
       }
     end
     view(pid)
@@ -36,6 +40,10 @@ defmodule Tron.Player do
       w: @player_start_width + 2 * score,
       h: @player_start_height + 2 * score,
     }
+  end
+
+  def score_to_speed(score) do
+    max @min_speed, @player_start_speed - score
   end
 
   def view(pid) do

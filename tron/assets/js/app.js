@@ -54,6 +54,7 @@ function create ()
 {
     const nick = window.game_config.username;
     state.prev_pos = { x: 0, y: 0 };
+    state.speed = 160;
     state.score = 0;
     state.players = {};
     state.food = {};
@@ -147,6 +148,8 @@ function create ()
             state.score_text.text = `score: ${state.score}`;
             // update size
             state.avatar.setDisplaySize(player.size.w, player.size.h);
+            // update speed
+            state.speed = player.speed;
         }
     });
 
@@ -167,6 +170,7 @@ function update ()
         avatar,
         cursors,
         ready,
+        speed,
     } = state;
 
     if (!ready) {
@@ -175,19 +179,19 @@ function update ()
 
     // manage keyboard controls
     if (cursors.left.isDown) {
-        avatar.setVelocityX(-160);
+        avatar.setVelocityX(-speed);
     }
     else if (cursors.right.isDown) {
-        avatar.setVelocityX(160);
+        avatar.setVelocityX(speed);
     }
     else {
         avatar.setVelocityX(0);
     }
     if (cursors.up.isDown) {
-        avatar.setVelocityY(-160);
+        avatar.setVelocityY(-speed);
     }
     else if (cursors.down.isDown) {
-        avatar.setVelocityY(160);
+        avatar.setVelocityY(speed);
     }
     else {
         avatar.setVelocityY(0);
